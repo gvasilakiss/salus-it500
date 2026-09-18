@@ -64,12 +64,8 @@ Restart Home Assistant.
 
 **Settings → Devices & Services → Add Integration → Salus iT500**
 
-Enter the email address and password you use for the iT500 app. The integration
-reads the device list off your account, so you normally just pick your
-thermostat from a list.
-
-If the list can't be fetched (the website fallback has no device-list endpoint),
-you'll be asked for a device ID. Sign in at `salus-it500.com`, open your device,
+Enter the email address and password you use for the iT500 app, plus the
+device ID for the thermostat. Sign in at `salus-it500.com`, open your device,
 and copy the number from the address bar — you can paste the whole URL:
 
 ```
