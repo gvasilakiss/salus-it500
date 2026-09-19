@@ -1,0 +1,72 @@
+name: Quality checks
+
+on:
+  push:
+    branches:
+      - "**"
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    name: Ruff, tests, and validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+
+      - name: Install test dependencies
+        run: python -m pip install --upgrade pip pytest-homeassistant-custom-component aioresponses ruff PyYAML
+
+      - name: Lint with Ruff
+        run: ruff check .
+
+      - name: Check Ruff formatting
+        run: ruff format --check .
+
+      - name: Compile Python files
+        run: python -m compileall -q custom_components/salus_it500 tests test_connection.py
+
+      - name: Validate JSON and YAML
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          for path in [
+              Path("hacs.json"),
+              Path("custom_components/salus_it500/manifest.json"),
+              Path("custom_components/salus_it500/strings.json"),
+              Path("custom_components/salus_it500/translations/en.json"),
+          ]:
+              json.loads(path.read_text())
+              print(f"JSON OK: {path}")
+          PY
+          python - <<'PY'
+          from pathlib import Path
+          import yaml
+
+          for path in [
+              Path("custom_components/salus_it500/services.yaml"),
+              Path("examples/dashboards/salus_full_dashboard.yaml"),
+          ]:
+              yaml.safe_load(path.read_text())
+              print(f"YAML OK: {path}")
+          PY
+
+      - name: Run tests
+        run: pytest -q

@@ -1,5 +1,7 @@
 # Salus iT500 for Home Assistant
 
+[![Quality checks](https://github.com/gvasilakiss/salus/actions/workflows/ci.yml/badge.svg)](https://github.com/gvasilakiss/salus/actions/workflows/ci.yml)
+
 A custom integration for the Salus iT500 internet thermostat (and the RT310i /
 RT510 / XT500 heads that pair with the same wiring centre).
 
