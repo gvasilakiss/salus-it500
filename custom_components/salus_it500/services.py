@@ -15,10 +15,10 @@ from homeassistant.core import (
     callback,
 )
 from homeassistant.exceptions import HomeAssistantError, ServiceValidationError
-from homeassistant.helpers import config_validation as cv, device_registry as dr
+from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 
 from .api import SalusValidationError
-
 from .api.schedule import (
     decode_heating,
     decode_hot_water,
@@ -122,9 +122,7 @@ SET_HOLIDAY_SCHEMA = BASE_SCHEMA.extend(
 )
 
 
-def _coordinator_for(
-    hass: HomeAssistant, device_id: str
-) -> SalusDataUpdateCoordinator:
+def _coordinator_for(hass: HomeAssistant, device_id: str) -> SalusDataUpdateCoordinator:
     """Resolve a HA device ID to this integration's coordinator."""
     registry = dr.async_get(hass)
     device = registry.async_get(device_id)
@@ -175,13 +173,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
         first = entries[0]
 
         if is_hot_water and "on_time" not in first:
-            raise ServiceValidationError(
-                "Hot water entries need on_time and off_time"
-            )
+            raise ServiceValidationError("Hot water entries need on_time and off_time")
         if not is_hot_water and "time" not in first:
-            raise ServiceValidationError(
-                "Heating entries need time and temperature"
-            )
+            raise ServiceValidationError("Heating entries need time and temperature")
 
         try:
             program = (
@@ -203,7 +197,9 @@ def async_setup_services(hass: HomeAssistant) -> None:
         # still answering with an HTTP 500.
         await coordinator.async_refresh()
         zone_state = coordinator.data.zone(zone)
-        mismatches = [day for day in days if zone_state.programs.get(day, "") != program]
+        mismatches = [
+            day for day in days if zone_state.programs.get(day, "") != program
+        ]
         if mismatches:
             raise HomeAssistantError(
                 "Salus did not confirm the new schedule for "

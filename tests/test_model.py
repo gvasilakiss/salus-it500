@@ -103,9 +103,7 @@ def test_hot_water_unavailable_when_attributes_absent():
     assert state.hw.boost_active is False
 
 
-@pytest.mark.parametrize(
-    ("raw", "expected"), [("1", True), ("0", False), (None, None)]
-)
+@pytest.mark.parametrize(("raw", "expected"), [("1", True), ("0", False), (None, None)])
 def test_battery_status(raw, expected):
     attrs = {} if raw is None else {"S03": raw}
     state = parse_attributes("dev", attrs)

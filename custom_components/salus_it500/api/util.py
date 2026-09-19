@@ -28,9 +28,7 @@ RETRY_DELAYS: tuple[float, ...] = (1.0, 2.0, 4.0, 8.0)
 #: message. aiohttp exceptions sometimes stringify the full request URL
 #: (including query parameters), so anything derived from a caught network
 #: error is passed through this before it is logged or re-raised.
-_SECRET_RE = re.compile(
-    r"(secToken|token|password|pass|pwd)=[^&\s'\"]+", re.IGNORECASE
-)
+_SECRET_RE = re.compile(r"(secToken|token|password|pass|pwd)=[^&\s'\"]+", re.IGNORECASE)
 
 
 def redact_secrets(text: str) -> str:

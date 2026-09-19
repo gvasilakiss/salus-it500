@@ -210,7 +210,9 @@ class ArrayentClient(SalusClient):
                 kwargs["data"] = {k: str(v) for k, v in body.items()}
 
             response = await async_request_with_retry(
-                lambda: self._session.request(method, url, **kwargs),
+                lambda request_kwargs=kwargs: self._session.request(
+                    method, url, **request_kwargs
+                ),
                 what=f"Salus ({endpoint})",
             )
 
@@ -374,16 +376,12 @@ class ArrayentClient(SalusClient):
 
     async def async_set_hot_water_mode(self, mode: HotWaterMode) -> None:
         """Set the hot water channel mode."""
-        await self._async_set(
-            {Prefix.HW.value + ZoneAttr.HW_MODE.value: int(mode)}
-        )
+        await self._async_set({Prefix.HW.value + ZoneAttr.HW_MODE.value: int(mode)})
 
     async def async_set_boost(self, zone: str, hours: int) -> None:
         """Start a boost of ``hours``, or cancel it with 0."""
         hours = max(0, min(int(hours), 3))
-        attr = (
-            ZoneAttr.HW_BOOST_HOURS if zone == "hw" else ZoneAttr.CH_BOOST_HOURS
-        )
+        attr = ZoneAttr.HW_BOOST_HOURS if zone == "hw" else ZoneAttr.CH_BOOST_HOURS
         await self._async_set({self._zone_attr(zone, attr): hours})
 
     async def async_set_frost_temperature(self, temperature: float) -> None:

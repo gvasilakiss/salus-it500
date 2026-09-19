@@ -21,9 +21,7 @@ class SalusEntity(CoordinatorEntity[SalusDataUpdateCoordinator]):
 
     _attr_has_entity_name = True
 
-    def __init__(
-        self, coordinator: SalusDataUpdateCoordinator, key: str
-    ) -> None:
+    def __init__(self, coordinator: SalusDataUpdateCoordinator, key: str) -> None:
         """Register the entity against the wiring centre."""
         super().__init__(coordinator)
         self._key = key

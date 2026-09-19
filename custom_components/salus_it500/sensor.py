@@ -40,7 +40,9 @@ class SalusSensorDescription(SensorEntityDescription):
     exists_fn: Callable[[DeviceState], bool] = lambda _: True
 
 
-def _zone_schedule_attributes(zone_name: str) -> Callable[[DeviceState], dict[str, Any]]:
+def _zone_schedule_attributes(
+    zone_name: str,
+) -> Callable[[DeviceState], dict[str, Any]]:
     """Build an attribute extractor for a zone's schedule sensor."""
 
     def extract(state: DeviceState) -> dict[str, Any]:
@@ -56,8 +58,7 @@ def _zone_schedule_attributes(zone_name: str) -> Callable[[DeviceState], dict[st
             "next_change_at": upcoming["time"] if upcoming else None,
             "next_change_temperature": upcoming["temperature"] if upcoming else None,
             "full_week": {
-                name: decode_heating(program)
-                for name, program in zone.programs.items()
+                name: decode_heating(program) for name, program in zone.programs.items()
             },
         }
 

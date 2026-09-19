@@ -51,9 +51,7 @@ class SalusHeatingModeSelect(SalusZoneEntity, SelectEntity):
     _attr_options = HEATING_OPTIONS
     _attr_icon = "mdi:thermostat"
 
-    def __init__(
-        self, coordinator: SalusDataUpdateCoordinator, zone: str
-    ) -> None:
+    def __init__(self, coordinator: SalusDataUpdateCoordinator, zone: str) -> None:
         """Set the unique ID and, for zone 2, a distinguishing name."""
         super().__init__(coordinator, zone, "mode_select")
         if zone == ZONE_CH2:

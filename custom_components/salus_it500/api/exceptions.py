@@ -47,4 +47,3 @@ class SalusValidationError(SalusError):
 
 class SalusUnsupportedFeature(SalusError):
     """The active transport cannot perform this operation."""
-

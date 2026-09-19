@@ -275,7 +275,9 @@ def report(attrs):
     info(f"Description        {attrs.get('desc', '(none)')}")
     info(f"System type        {SYSTEM_TYPES.get(system_type, system_type)}")
     info(f"Firmware           {attrs.get('S13', '?')}")
-    info(f"Units              {'Celsius' if as_int(attrs.get('S07'), 0) == 0 else 'Fahrenheit'}")
+    info(
+        f"Units              {'Celsius' if as_int(attrs.get('S07'), 0) == 0 else 'Fahrenheit'}"
+    )
     info(f"Frost setpoint     {scaled(attrs.get('S09'))} C")
     info(f"Calibration        {scaled(attrs.get('S17'))} C")
     info(f"Holiday mode       {'on' if as_int(attrs.get('S10'), 0) else 'off'}")
@@ -293,8 +295,12 @@ def report(attrs):
         info(f"Room temperature   {scaled(attrs.get(prefix + '84'))} C")
         info(f"Setpoint           {scaled(attrs.get(prefix + '85'))} C")
         info(f"Mode               {MODES.get(flags, f'unknown {flags}')}")
-        info(f"Boiler calling     {'yes' if as_int(attrs.get(prefix + '87'), 0) else 'no'}")
-        info(f"Frost active       {'yes' if as_int(attrs.get(prefix + '90'), 0) else 'no'}")
+        info(
+            f"Boiler calling     {'yes' if as_int(attrs.get(prefix + '87'), 0) else 'no'}"
+        )
+        info(
+            f"Frost active       {'yes' if as_int(attrs.get(prefix + '90'), 0) else 'no'}"
+        )
         info(f"Boost remaining    {as_int(attrs.get(prefix + '91'), 0)} h")
 
     if "C45" in attrs:

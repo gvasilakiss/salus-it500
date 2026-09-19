@@ -49,9 +49,7 @@ URL_SET = "https://salus-it500.com/includes/set.php"
 TOKEN_TTL = 9 * 60
 REQUEST_TIMEOUT = ClientTimeout(total=30)
 
-TOKEN_RE = re.compile(
-    r'<input[^>]*id="token"[^>]*value="([^"]+)"', re.IGNORECASE
-)
+TOKEN_RE = re.compile(r'<input[^>]*id="token"[^>]*value="([^"]+)"', re.IGNORECASE)
 
 USER_AGENT = (
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
@@ -184,7 +182,10 @@ class WebClient(SalusClient):
             lambda: self._session.get(
                 URL_VALUES,
                 params=params,
-                headers={"User-Agent": USER_AGENT, "X-Requested-With": "XMLHttpRequest"},
+                headers={
+                    "User-Agent": USER_AGENT,
+                    "X-Requested-With": "XMLHttpRequest",
+                },
                 timeout=REQUEST_TIMEOUT,
             ),
             what="salus-it500.com",
@@ -201,7 +202,9 @@ class WebClient(SalusClient):
         except ValueError:
             # An expired token yields the login page instead of JSON.
             self._token = None
-            raise SalusAuthError("Session expired; salus-it500.com returned HTML")
+            raise SalusAuthError(
+                "Session expired; salus-it500.com returned HTML"
+            ) from None
 
         if not isinstance(data, dict):
             raise SalusConnectionError("Unexpected payload from salus-it500.com")

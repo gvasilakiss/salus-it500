@@ -16,8 +16,12 @@ from custom_components.salus_it500.coordinator import SalusDataUpdateCoordinator
 from .fakes import FakeSalusClient, make_state
 
 
-async def _make_coordinator(hass, client: FakeSalusClient) -> SalusDataUpdateCoordinator:
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_DEVICE_ID: client.state.device_id})
+async def _make_coordinator(
+    hass, client: FakeSalusClient
+) -> SalusDataUpdateCoordinator:
+    entry = MockConfigEntry(
+        domain=DOMAIN, data={CONF_DEVICE_ID: client.state.device_id}
+    )
     entry.add_to_hass(hass)
     coordinator = SalusDataUpdateCoordinator(hass, entry, client, scan_interval=120)
     entry.runtime_data = coordinator
@@ -67,7 +71,10 @@ async def test_commands_are_serialised(hass):
     )
 
     # If the lock worked, one action fully completes before the other starts.
-    assert order in (["a-start", "a-end", "b-start", "b-end"], ["b-start", "b-end", "a-start", "a-end"])
+    assert order in (
+        ["a-start", "a-end", "b-start", "b-end"],
+        ["b-start", "b-end", "a-start", "a-end"],
+    )
 
 
 async def test_advance_zone_holds_next_scheduled_temperature(hass, monkeypatch):

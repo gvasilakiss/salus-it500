@@ -188,9 +188,7 @@ async def test_set_raises_on_error_message(mock_api, session):
 
 async def test_set_raises_on_nonzero_retcode(mock_api, session):
     mock_api.post(AUTH_URL, payload={"securityToken": "tok", "userId": 1})
-    mock_api.get(
-        SET_URL, status=200, body="<response><retCode>5</retCode></response>"
-    )
+    mock_api.get(SET_URL, status=200, body="<response><retCode>5</retCode></response>")
     with pytest.raises(SalusDeviceError):
         await _client(session).async_set_frost_temperature(7.0)
 

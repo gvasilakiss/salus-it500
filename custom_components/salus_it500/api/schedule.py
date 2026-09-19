@@ -84,8 +84,7 @@ def _hhmm(text: str) -> tuple[int, int]:
 def _groups(raw: Any) -> list[str]:
     text = str(raw or "").strip()
     return [
-        text[i : i + _GROUP]
-        for i in range(0, len(text) - len(text) % _GROUP, _GROUP)
+        text[i : i + _GROUP] for i in range(0, len(text) - len(text) % _GROUP, _GROUP)
     ]
 
 
@@ -171,9 +170,7 @@ def encode_heating(slots: list[dict[str, Any]]) -> str:
         tenths = int(round((temperature - whole) * 10))
         if tenths == 10:  # rounding spill, e.g. 20.999
             whole, tenths = whole + 1, 0
-        parts.append(
-            _encode(hour) + _encode(minute) + _encode(whole) + _encode(tenths)
-        )
+        parts.append(_encode(hour) + _encode(minute) + _encode(whole) + _encode(tenths))
     return "".join(parts)
 
 
@@ -230,9 +227,7 @@ def encode_hot_water(slots: list[dict[str, Any]]) -> str:
     for slot in slots:
         on_h, on_m = _hhmm(str(slot.get("on_time", "00:00")))
         off_h, off_m = _hhmm(str(slot.get("off_time", "00:00")))
-        parts.append(
-            _encode(on_h) + _encode(on_m) + _encode(off_h) + _encode(off_m)
-        )
+        parts.append(_encode(on_h) + _encode(on_m) + _encode(off_h) + _encode(off_m))
     return "".join(parts)
 
 
@@ -240,9 +235,7 @@ def describe_heating(slots: list[HeatingSlot]) -> str:
     """Render heating slots as a single readable line."""
     if not slots:
         return "No schedule"
-    return "  ".join(
-        f"{s['time']} {s['temperature']:g}\u00b0C" for s in slots
-    )
+    return "  ".join(f"{s['time']} {s['temperature']:g}\u00b0C" for s in slots)
 
 
 def describe_hot_water(slots: list[HotWaterSlot]) -> str:

@@ -7,16 +7,20 @@ from homeassistant.components.climate import HVACAction, HVACMode
 from homeassistant.exceptions import ServiceValidationError
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
+from custom_components.salus_it500.api.model import HeatingMode
 from custom_components.salus_it500.climate import SalusClimate
 from custom_components.salus_it500.const import CONF_DEVICE_ID, DOMAIN, ZONE_CH1
 from custom_components.salus_it500.coordinator import SalusDataUpdateCoordinator
-from custom_components.salus_it500.api.model import HeatingMode
 
 from .fakes import FakeSalusClient, make_state
 
 
-async def _make_coordinator(hass, client: FakeSalusClient) -> SalusDataUpdateCoordinator:
-    entry = MockConfigEntry(domain=DOMAIN, data={CONF_DEVICE_ID: client.state.device_id})
+async def _make_coordinator(
+    hass, client: FakeSalusClient
+) -> SalusDataUpdateCoordinator:
+    entry = MockConfigEntry(
+        domain=DOMAIN, data={CONF_DEVICE_ID: client.state.device_id}
+    )
     entry.add_to_hass(hass)
     coordinator = SalusDataUpdateCoordinator(hass, entry, client, scan_interval=120)
     entry.runtime_data = coordinator

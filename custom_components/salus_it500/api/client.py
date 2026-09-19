@@ -74,9 +74,7 @@ class SalusClient(ABC):
 
     async def async_set_span(self, span: float) -> None:
         """Set the switching differential."""
-        raise SalusUnsupportedFeature(
-            f"{self.transport} transport cannot set the span"
-        )
+        raise SalusUnsupportedFeature(f"{self.transport} transport cannot set the span")
 
     async def async_set_program(self, zone: str, day: str, program: str) -> None:
         """Write one day of the weekly program."""

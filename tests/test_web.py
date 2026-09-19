@@ -27,8 +27,7 @@ VALUES_URL = re.compile(r".*/public/ajax_device_values\.php.*")
 SET_URL = re.compile(r".*/includes/set\.php.*")
 
 CONTROL_PAGE_WITH_TOKEN = (
-    '<html><body><input type="hidden" id="token" value="tok-abc123" />'
-    "</body></html>"
+    '<html><body><input type="hidden" id="token" value="tok-abc123" /></body></html>'
 )
 LOGIN_PAGE_NO_TOKEN = (
     "<html><body><form>email <input name='password'/> login</form></body></html>"
@@ -62,7 +61,9 @@ async def test_login_success(mock_web, session):
     assert client._token == "tok-abc123"  # noqa: SLF001
 
 
-async def test_login_no_token_but_login_markers_present_is_auth_error(mock_web, session):
+async def test_login_no_token_but_login_markers_present_is_auth_error(
+    mock_web, session
+):
     mock_web.post(LOGIN_URL, body="ok")
     mock_web.get(CONTROL_URL, body=LOGIN_PAGE_NO_TOKEN)
     with pytest.raises(SalusAuthError):

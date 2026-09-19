@@ -154,7 +154,9 @@ class SalusConfigFlow(ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            raw = user_input.get(MANUAL_DEVICE_ID) or user_input.get(CONF_DEVICE_ID) or ""
+            raw = (
+                user_input.get(MANUAL_DEVICE_ID) or user_input.get(CONF_DEVICE_ID) or ""
+            )
             device_id = extract_device_id(raw)
             if not device_id:
                 errors["base"] = "invalid_device_id"

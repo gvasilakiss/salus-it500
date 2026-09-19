@@ -23,7 +23,7 @@ from custom_components.salus_it500.api.schedule import (
 
 
 def test_decode_heating_documented_example():
-    """"5XE0" is the exact example documented in the README: 05:40 at 21.0C."""
+    """ "5XE0" is the exact example documented in the README: 05:40 at 21.0C."""
     assert decode_heating("5XE0") == [{"time": "05:40", "temperature": 21.0}]
 
 

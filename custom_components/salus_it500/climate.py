@@ -81,9 +81,7 @@ class SalusClimate(SalusZoneEntity, ClimateEntity):
     _attr_hvac_modes = [HVACMode.OFF, HVACMode.AUTO, HVACMode.HEAT]
     _attr_translation_key = "heating"
 
-    def __init__(
-        self, coordinator: SalusDataUpdateCoordinator, zone: str
-    ) -> None:
+    def __init__(self, coordinator: SalusDataUpdateCoordinator, zone: str) -> None:
         """Advertise the features the active transport can honour."""
         super().__init__(coordinator, zone, "thermostat")
         self._attr_name = None if zone == ZONE_CH1 else "Zone 2"

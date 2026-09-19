@@ -8,7 +8,7 @@ import time
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, TypeAlias
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -46,7 +46,7 @@ _LOGGER = logging.getLogger(__name__)
 #: immediate one.
 POST_COMMAND_DELAY = 4.0
 
-type SalusConfigEntry = ConfigEntry[SalusDataUpdateCoordinator]
+SalusConfigEntry: TypeAlias = ConfigEntry["SalusDataUpdateCoordinator"]
 
 
 @dataclass(slots=True)
@@ -243,7 +243,9 @@ class SalusDataUpdateCoordinator(DataUpdateCoordinator[DeviceState]):
         self.clear_pending_override(zone)
         await self.async_command(
             lambda: self.client.async_set_heating_mode(zone, HeatingMode.AUTO),
-            optimistic=lambda state: setattr(state.zone(zone), "mode", HeatingMode.AUTO),
+            optimistic=lambda state: setattr(
+                state.zone(zone), "mode", HeatingMode.AUTO
+            ),
         )
 
     def _heating_zone(self, zone: str) -> HeatingZoneState:
@@ -332,4 +334,3 @@ def _apply_hold(state: DeviceState, zone: str, temperature: float) -> None:
     zone_state.target_temperature = temperature
     if isinstance(zone_state, HeatingZoneState):
         zone_state.mode = HeatingMode.TEMP_HOLD
-

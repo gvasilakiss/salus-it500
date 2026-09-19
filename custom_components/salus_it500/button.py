@@ -138,4 +138,3 @@ class SalusCancelOverrideButton(SalusZoneEntity, ButtonEntity):
     async def async_press(self) -> None:
         """Return the zone to following its schedule."""
         await self.coordinator.async_cancel_override_zone(self._zone)
-

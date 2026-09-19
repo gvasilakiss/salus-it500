@@ -402,8 +402,10 @@ harness for entity/coordinator tests):
 
 ```bash
 python3 -m venv .venv-ha && source .venv-ha/bin/activate
-pip install pytest-homeassistant-custom-component aioresponses
+pip install pytest-homeassistant-custom-component aioresponses ruff
 pytest
+ruff check .
+ruff format --check .
 ```
 
 `python3 -m compileall custom_components/salus_it500` should always succeed.

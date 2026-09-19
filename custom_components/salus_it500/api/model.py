@@ -155,7 +155,9 @@ def _to_int(value: Any, default: int | None = None) -> int | None:
         return default
 
 
-def _scaled(value: Any, *, fahrenheit: bool = False, delta: bool = False) -> float | None:
+def _scaled(
+    value: Any, *, fahrenheit: bool = False, delta: bool = False
+) -> float | None:
     """Convert a x100-scaled integer into degrees Celsius.
 
     Salus stores every temperature as an integer scaled by 100, in whichever
@@ -306,10 +308,14 @@ def _parse_heating(
         return attrs.get(prefix.value + attr.value)
 
     zone = HeatingZoneState(prefix=prefix.value)
-    zone.current_temperature = _scaled(get(ZoneAttr.CH_ROOM_TEMPERATURE), fahrenheit=fahrenheit)
+    zone.current_temperature = _scaled(
+        get(ZoneAttr.CH_ROOM_TEMPERATURE), fahrenheit=fahrenheit
+    )
     zone.available = zone.current_temperature is not None
     zone.target_temperature = _scaled(get(ZoneAttr.CH_SETPOINT), fahrenheit=fahrenheit)
-    zone.manual_setpoint = _scaled(get(ZoneAttr.CH_MANUAL_SETPOINT), fahrenheit=fahrenheit)
+    zone.manual_setpoint = _scaled(
+        get(ZoneAttr.CH_MANUAL_SETPOINT), fahrenheit=fahrenheit
+    )
     zone.auto_setpoint = _scaled(get(ZoneAttr.CH_AUTO_SETPOINT), fahrenheit=fahrenheit)
     zone.relay_on = bool(_to_int(get(ZoneAttr.CH_RELAY_STATUS), 0))
     zone.frost_active = bool(_to_int(get(ZoneAttr.CH_FROST_ACTIVE), 0))

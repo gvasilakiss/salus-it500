@@ -69,4 +69,3 @@ async def async_get_config_entry_diagnostics(
         # attribute codes and values only - never credentials or tokens.
         "raw_attributes": state.raw,
     }
-
