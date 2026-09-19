@@ -1,0 +1,189 @@
+set_schedule:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+            - label: Hot water
+              value: hw
+    day:
+      required: true
+      selector:
+        select:
+          multiple: true
+          options:
+            - label: All days
+              value: all
+            - label: Monday
+              value: monday
+            - label: Tuesday
+              value: tuesday
+            - label: Wednesday
+              value: wednesday
+            - label: Thursday
+              value: thursday
+            - label: Friday
+              value: friday
+            - label: Saturday
+              value: saturday
+            - label: Sunday
+              value: sunday
+    entries:
+      required: true
+      example: |
+        - time: "06:30"
+          temperature: 20.5
+        - time: "08:30"
+          temperature: 16
+        - time: "17:00"
+          temperature: 21
+        - time: "22:30"
+          temperature: 15
+      selector:
+        object:
+
+get_schedule:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+            - label: Hot water
+              value: hw
+
+boost:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+            - label: Hot water
+              value: hw
+    hours:
+      required: true
+      default: 1
+      selector:
+        number:
+          min: 1
+          max: 3
+          step: 1
+          unit_of_measurement: h
+
+cancel_boost:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+            - label: Hot water
+              value: hw
+
+advance:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+
+skip:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    zone:
+      required: true
+      default: ch1
+      selector:
+        select:
+          options:
+            - label: Heating
+              value: ch1
+            - label: Heating zone 2
+              value: ch2
+
+refresh:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+
+set_holiday:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500
+    start:
+      selector:
+        text:
+    end:
+      selector:
+        text:
+
+clear_holiday:
+  fields:
+    device_id:
+      required: true
+      selector:
+        device:
+          integration: salus_it500

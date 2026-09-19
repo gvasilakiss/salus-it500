@@ -1,0 +1,272 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Salus iT500",
+        "description": "Sign in with the same email address and password you use for the Salus iT500 app or {portal}.",
+        "data": {
+          "username": "Email address",
+          "password": "Password",
+          "transport": "Connection method"
+        },
+        "data_description": {
+          "transport": "Automatic prefers the app's own API and falls back to the website if it is unreachable."
+        }
+      },
+      "device": {
+        "title": "Choose your thermostat",
+        "description": "{devices_found} The device ID is the devId in your portal URL, for example {example}.",
+        "data": {
+          "device_id": "Discovered device",
+          "manual_device_id": "Device ID or portal URL (optional override)"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-enter your password",
+        "description": "Salus rejected the stored credentials for {username}.",
+        "data": {
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Could not reach the Salus cloud. It may be down, or your network may be blocking it.",
+      "invalid_auth": "Salus rejected that email address or password.",
+      "invalid_device_id": "That does not look like a Salus device ID.",
+      "rate_limited": "Salus is rate limiting this address. Wait a few minutes and try again.",
+      "unknown": "Something unexpected went wrong. Check the logs for details."
+    },
+    "abort": {
+      "already_configured": "This thermostat is already set up.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Salus iT500 options",
+        "description": "Salus throttles accounts that poll hard. Leave the interval generous unless you have a reason not to.",
+        "data": {
+          "scan_interval": "Polling interval",
+          "transport": "Connection method"
+        }
+      }
+    }
+  },
+  "selector": {
+    "transport": {
+      "options": {
+        "auto": "Automatic (recommended)",
+        "api": "App API only",
+        "web": "Website only"
+      }
+    }
+  },
+  "entity": {
+    "climate": {
+      "heating": {
+        "name": "Thermostat",
+        "state_attributes": {
+          "preset_mode": {
+            "state": {
+              "Follow schedule": "Follow schedule",
+              "Temporary hold": "Temporary hold",
+              "Permanent hold": "Permanent hold",
+              "Boost": "Boost",
+              "Frost protection": "Frost protection"
+            }
+          }
+        }
+      }
+    },
+    "water_heater": {
+      "hot_water": {
+        "name": "Hot water"
+      }
+    },
+    "sensor": {
+      "room_temperature": { "name": "Room temperature" },
+      "room_temperature_zone2": { "name": "Room temperature zone 2" },
+      "setpoint": { "name": "Setpoint" },
+      "boost_remaining": { "name": "Boost remaining" },
+      "boost_remaining_zone2": { "name": "Boost remaining zone 2" },
+      "hot_water_boost_remaining": { "name": "Hot water boost remaining" },
+      "frost_temperature": { "name": "Frost protection temperature" },
+      "schedule_today": { "name": "Scheduled temperature" },
+      "schedule_today_zone2": { "name": "Scheduled temperature zone 2" },
+      "hot_water_schedule_today": { "name": "Hot water schedule today" },
+      "backend": {
+        "name": "Backend",
+        "state": { "api": "App API", "web": "Website" }
+      },
+      "system_type": {
+        "name": "System type",
+        "state": {
+          "ch1": "CH1 only",
+          "ch1_ch2": "CH1 + CH2",
+          "ch1_hw": "CH1 + hot water"
+        }
+      },
+      "firmware": { "name": "Firmware version" },
+      "last_update": { "name": "Last successful update" },
+      "last_update_duration": { "name": "Last update duration" },
+      "last_error": { "name": "Last error" },
+      "heating_mode": {
+        "name": "Heating mode",
+        "state": {
+          "auto": "Follow schedule",
+          "temp_hold": "Temporary hold",
+          "manual": "Permanent hold",
+          "off": "Off",
+          "unknown": "Unknown"
+        }
+      }
+    },
+    "binary_sensor": {
+      "heating_relay": { "name": "Heating" },
+      "heating_relay_zone2": { "name": "Heating zone 2" },
+      "hot_water_running": { "name": "Hot water" },
+      "frost_protection": { "name": "Frost protection" },
+      "holiday_mode": { "name": "Holiday mode" },
+      "battery_low": { "name": "Thermostat battery" },
+      "boost_active": { "name": "Boost active" },
+      "boost_active_zone2": { "name": "Boost active zone 2" },
+      "hot_water_boost_active": { "name": "Hot water boost active" },
+      "connectivity": { "name": "Connectivity" }
+    },
+    "switch": {
+      "hot_water_override": { "name": "Hot water override" },
+      "holiday_mode": { "name": "Holiday mode" }
+    },
+    "number": {
+      "frost_temperature": { "name": "Frost protection temperature" },
+      "temperature_offset": { "name": "Temperature calibration" },
+      "span": { "name": "Switching differential" }
+    },
+    "select": {
+      "heating_mode": {
+        "name": "Heating mode",
+        "state": {
+          "auto": "Follow schedule",
+          "temp_hold": "Temporary hold",
+          "manual": "Permanent hold",
+          "off": "Off"
+        }
+      },
+      "heating_mode_zone2": {
+        "name": "Heating mode zone 2",
+        "state": {
+          "auto": "Follow schedule",
+          "temp_hold": "Temporary hold",
+          "manual": "Permanent hold",
+          "off": "Off"
+        }
+      },
+      "hot_water_mode": {
+        "name": "Hot water mode",
+        "state": {
+          "auto": "Follow schedule",
+          "once": "Once",
+          "on": "Always on",
+          "off": "Always off"
+        }
+      }
+    }
+  },
+  "exceptions": {
+    "device_not_found": {
+      "message": "No device found with ID {device_id}."
+    },
+    "device_not_salus": {
+      "message": "Device {device_id} is not a Salus iT500."
+    },
+    "schedules_unsupported": {
+      "message": "Schedules are only available over the app API. Change the connection method in the integration options."
+    },
+    "boost_unsupported": {
+      "message": "Boost is only available over the app API. Change the connection method in the integration options."
+    },
+    "temperature_out_of_range": {
+      "message": "The temperature must be between {min} and {max} degrees."
+    }
+  },
+  "services": {
+    "set_schedule": {
+      "name": "Set schedule",
+      "description": "Writes one or more days of a zone's weekly program.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to write to." },
+        "zone": { "name": "Zone", "description": "Which channel to program." },
+        "day": { "name": "Days", "description": "Days to write, or 'all' for the whole week." },
+        "entries": {
+          "name": "Entries",
+          "description": "Up to six switching points. Heating entries use time and temperature; hot water entries use on_time and off_time."
+        }
+      }
+    },
+    "get_schedule": {
+      "name": "Get schedule",
+      "description": "Returns the decoded weekly program for a zone.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to read." },
+        "zone": { "name": "Zone", "description": "Which channel to read." }
+      }
+    },
+    "boost": {
+      "name": "Boost",
+      "description": "Starts a timed boost that reverts on its own.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to boost." },
+        "zone": { "name": "Zone", "description": "Which channel to boost." },
+        "hours": { "name": "Hours", "description": "How long to boost for." }
+      }
+    },
+    "cancel_boost": {
+      "name": "Cancel boost",
+      "description": "Cancels a running boost.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to act on." },
+        "zone": { "name": "Zone", "description": "Which channel to stop boosting." }
+      }
+    },
+    "advance": {
+      "name": "Advance",
+      "description": "Jumps a heating zone to its next scheduled temperature immediately.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to act on." },
+        "zone": { "name": "Zone", "description": "Which heating zone to advance." }
+      }
+    },
+    "skip": {
+      "name": "Skip",
+      "description": "Skips a heating zone's next scheduled change, applying the one after it instead.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to act on." },
+        "zone": { "name": "Zone", "description": "Which heating zone to skip." }
+      }
+    },
+    "refresh": {
+      "name": "Refresh",
+      "description": "Forces an immediate, un-debounced refresh from Salus.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to refresh." }
+      }
+    },
+    "set_holiday": {
+      "name": "Set holiday mode",
+      "description": "Drops every zone to frost protection until you cancel it.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to act on." },
+        "start": { "name": "Start", "description": "Optional start timestamp." },
+        "end": { "name": "End", "description": "Optional end timestamp." }
+      }
+    },
+    "clear_holiday": {
+      "name": "Clear holiday mode",
+      "description": "Cancels holiday mode and returns to the normal schedule.",
+      "fields": {
+        "device_id": { "name": "Device", "description": "The iT500 to act on." }
+      }
+    }
+  }
+}

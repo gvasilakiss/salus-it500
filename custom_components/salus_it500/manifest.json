@@ -1,0 +1,15 @@
+{
+  "domain": "salus_it500",
+  "name": "Salus iT500",
+  "codeowners": ["@gvasilakiss"],
+  "config_flow": true,
+  "dependencies": [],
+  "documentation": "https://github.com/gvasilakiss/salus",
+  "integration_type": "hub",
+  "iot_class": "cloud_polling",
+  "issue_tracker": "https://github.com/gvasilakiss/salus/issues",
+  "loggers": ["custom_components.salus_it500"],
+  "requirements": [],
+  "version": "2.0.0"
+}
+

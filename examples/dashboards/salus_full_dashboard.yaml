@@ -1,0 +1,217 @@
+# ============================================================================
+# Salus iT500 - Full Heating (+ optional Hot Water / Zone 2) Dashboard
+# ============================================================================
+# Example Lovelace dashboard for the salus_it500 custom integration.
+#
+# Entity IDs below use this integration's naming convention:
+#   salus_it500_<device_id>_<function>
+# and are written for device ID 33591764 (find/replace with your own).
+#
+# Sections whose entities don't exist on your system (CH2, hot water) will
+# show as unavailable rows rather than break the dashboard - but it's cleaner
+# to just delete those cards if your iT500 doesn't have that zone. Check your
+# actual entity IDs at Settings -> Devices & Services -> Salus iT500.
+#
+# No custom frontend/HACS cards are required - everything here is stock
+# Lovelace (grid, entities, thermostat, markdown, conditional).
+#
+# Note: unlike the salus-it500-extended reference dashboard this was inspired
+# by, no spa/hot-tub entities are included here - those aren't part of Salus.
+# ============================================================================
+
+views:
+  - title: Heating
+    path: salus-it500
+    icon: mdi:radiator
+    cards:
+      # --- Overview -----------------------------------------------------
+      - type: thermostat
+        entity: climate.salus_it500_33591764
+        features:
+          - type: climate-hvac-modes
+            hvac_modes: ["off", "auto", "heat"]
+
+      - type: glance
+        title: Overview
+        columns: 3
+        entities:
+          - entity: sensor.salus_it500_33591764_room_temperature
+            name: Room
+          - entity: sensor.salus_it500_33591764_setpoint
+            name: Target
+          - entity: binary_sensor.salus_it500_33591764_heating
+            name: Heating
+          - entity: sensor.salus_it500_33591764_heating_mode
+            name: Mode
+          - entity: sensor.salus_it500_33591764_scheduled_temperature
+            name: Next temp
+            secondary_info: last-changed
+          - entity: binary_sensor.salus_it500_33591764_connectivity
+            name: Connection
+
+      # --- Heating controls ------------------------------------------------
+      - type: entities
+        title: Heating controls
+        state_color: true
+        entities:
+          - entity: select.salus_it500_33591764_heating_mode
+            name: Mode
+          - type: divider
+          - entity: button.salus_it500_33591764_boost_1h
+            name: Boost 1h
+          - entity: button.salus_it500_33591764_boost_2h
+            name: Boost 2h
+          - entity: button.salus_it500_33591764_boost_3h
+            name: Boost 3h
+          - entity: button.salus_it500_33591764_cancel_boost
+            name: Cancel boost
+          - type: divider
+          - entity: button.salus_it500_33591764_advance
+            name: Advance
+          - entity: button.salus_it500_33591764_skip_next_change
+            name: Skip next change
+          - entity: button.salus_it500_33591764_cancel_override
+            name: Cancel override
+
+      - type: entities
+        title: Heating status
+        state_color: true
+        entities:
+          - entity: binary_sensor.salus_it500_33591764_heating
+            name: Heating active
+          - entity: binary_sensor.salus_it500_33591764_boost_active
+            name: Boost active
+          - entity: sensor.salus_it500_33591764_boost_remaining
+            name: Boost remaining
+          - entity: sensor.salus_it500_33591764_scheduled_temperature
+            name: Scheduled now
+
+      # --- Today's schedule -------------------------------------------------
+      - type: markdown
+        title: Today's schedule
+        content: >-
+          {% set entity = 'sensor.salus_it500_33591764_scheduled_temperature' %}
+          {% set entries = state_attr(entity, 'slots') %}
+          {% set now_hhmm = now().strftime('%H:%M') %}
+          {% if entries %}
+          {% for entry in entries %}
+          {% if entry.time <= now_hhmm %}**{{ entry.time }} -> {{ entry.temperature }}°C (active)**
+          {% else %}{{ entry.time }} -> {{ entry.temperature }}°C
+          {% endif %}
+          {% endfor %}
+          {% else %}
+          No schedule configured for today.
+          {% endif %}
+
+      # --- Weekly schedule ----------------------------------------------
+      - type: markdown
+        title: Weekly schedule
+        content: >-
+          {% set entity = 'sensor.salus_it500_33591764_scheduled_temperature' %}
+          {% set week = state_attr(entity, 'full_week') %}
+          {% if week %}
+          {% for day in ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] %}
+          **{{ day | title }}**: {% for e in week.get(day, []) %}{{ e.time }} {{ e.temperature }}°C{% if not loop.last %}, {% endif %}{% endfor %}{% if not week.get(day) %}no entries{% endif %}
+
+          {% endfor %}
+          {% else %}
+          Schedule data isn't available (needs the app-API backend).
+          {% endif %}
+
+      # --- System -------------------------------------------------------
+      - type: entities
+        title: System
+        state_color: true
+        entities:
+          - entity: binary_sensor.salus_it500_33591764_frost_protection
+            name: Frost protection active
+          - entity: number.salus_it500_33591764_frost_protection_temperature
+            name: Frost protection temperature
+          - type: divider
+          - entity: switch.salus_it500_33591764_holiday_mode
+            name: Holiday mode
+          - entity: binary_sensor.salus_it500_33591764_holiday_mode
+            name: Holiday active
+          - type: divider
+          - entity: number.salus_it500_33591764_temperature_calibration
+            name: Temperature calibration
+          - entity: number.salus_it500_33591764_switching_differential
+            name: Switching differential
+          - type: divider
+          - entity: binary_sensor.salus_it500_33591764_thermostat_battery
+            name: Thermostat battery low
+
+      - type: entities
+        title: Diagnostics
+        state_color: true
+        entities:
+          - entity: sensor.salus_it500_33591764_backend
+            name: Backend
+          - entity: sensor.salus_it500_33591764_system_type
+            name: System type
+          - entity: sensor.salus_it500_33591764_firmware_version
+            name: Firmware
+          - entity: sensor.salus_it500_33591764_last_successful_update
+            name: Last successful update
+          - entity: sensor.salus_it500_33591764_last_update_duration
+            name: Last update duration
+          - entity: sensor.salus_it500_33591764_last_error
+            name: Last error
+
+      # --- Zone 2 (only if your system has CH1+CH2 - delete otherwise) -----
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: climate.salus_it500_33591764_zone_2
+            state_not: unavailable
+        card:
+          type: thermostat
+          entity: climate.salus_it500_33591764_zone_2
+
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: select.salus_it500_33591764_heating_mode_zone_2
+            state_not: unavailable
+        card:
+          type: entities
+          title: Zone 2
+          entities:
+            - entity: sensor.salus_it500_33591764_room_temperature_zone_2
+              name: Room temperature
+            - entity: binary_sensor.salus_it500_33591764_heating_zone_2
+              name: Heating active
+            - entity: select.salus_it500_33591764_heating_mode_zone_2
+              name: Mode
+
+      # --- Hot water (only if your system has CH1+HW - delete otherwise) ---
+      - type: conditional
+        conditions:
+          - condition: state
+            entity: water_heater.salus_it500_33591764_hot_water
+            state_not: unavailable
+        card:
+          type: entities
+          title: Hot water
+          state_color: true
+          entities:
+            - entity: water_heater.salus_it500_33591764_hot_water
+              name: State
+            - entity: binary_sensor.salus_it500_33591764_hot_water
+              name: Relay on
+            - entity: select.salus_it500_33591764_hot_water_mode
+              name: Mode
+            - entity: switch.salus_it500_33591764_hot_water_override
+              name: Override (always on/off)
+            - type: divider
+            - entity: button.salus_it500_33591764_hot_water_boost_1h
+              name: Boost 1h
+            - entity: button.salus_it500_33591764_hot_water_cancel_boost
+              name: Cancel boost
+            - entity: binary_sensor.salus_it500_33591764_hot_water_boost_active
+              name: Boost active
+            - entity: sensor.salus_it500_33591764_hot_water_boost_remaining
+              name: Boost remaining
+            - type: divider
+            - entity: sensor.salus_it500_33591764_hot_water_schedule_today
+              name: Today's schedule

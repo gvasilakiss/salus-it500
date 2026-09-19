@@ -9,6 +9,15 @@ Heating groups are ``HH MM TT tt``: hour, minute, whole degrees, tenths.
 
 Hot water groups are ``ON_H ON_M OFF_H OFF_M`` - a pair of switching times
 with no temperature.
+
+Unit note: temperatures here are treated as whatever unit the device itself
+is configured for, same as every other temperature attribute (see
+``api.model.is_fahrenheit``). Only Celsius-mode devices have been verified
+against real hardware; there is no confirmed sample of a Fahrenheit-mode
+schedule string to check the whole-degree ceiling (``TT`` tops out at 50)
+against, so no F->C conversion is applied here. If your account is configured
+for Fahrenheit, treat schedule temperatures shown by this integration with
+caution and verify them against the app before relying on them.
 """
 
 from __future__ import annotations
@@ -16,7 +25,20 @@ from __future__ import annotations
 import logging
 from typing import Any, TypedDict
 
+from .exceptions import SalusValidationError
+
 _LOGGER = logging.getLogger(__name__)
+
+#: The iT500 has room for six switching points per day; a seventh group is
+#: simply never read back by the app or the web portal.
+MAX_ENTRIES_PER_DAY = 6
+
+#: The thermostat's own UI only ever offers half-degree steps, even though
+#: the wire format could in principle carry tenths.
+TEMPERATURE_INCREMENT = 0.5
+MIN_SCHEDULE_TEMP = 0.0
+MAX_SCHEDULE_TEMP = 50.0
+
 
 _OFFSET = 48
 _GROUP = 4
@@ -89,8 +111,58 @@ def decode_heating(raw: Any) -> list[HeatingSlot]:
     return slots
 
 
+def validate_heating_entries(entries: list[dict[str, Any]]) -> None:
+    """Validate heating schedule entries before they are encoded and sent.
+
+    Raises :class:`SalusValidationError` on the first problem found: more
+    than six entries, an unparsable time, a duplicate switching time, a
+    temperature outside the supported range, or one that isn't a multiple
+    of ``TEMPERATURE_INCREMENT``.
+    """
+    if len(entries) > MAX_ENTRIES_PER_DAY:
+        raise SalusValidationError(
+            f"A day can have at most {MAX_ENTRIES_PER_DAY} switching points, "
+            f"got {len(entries)}"
+        )
+
+    seen_times: set[str] = set()
+    for entry in entries:
+        raw_time = str(entry.get("time", ""))
+        try:
+            hour, minute = _hhmm(raw_time)
+        except ValueError as err:
+            raise SalusValidationError(f"'{raw_time}' is not a valid time") from err
+
+        stamp = f"{hour:02d}:{minute:02d}"
+        if stamp in seen_times:
+            raise SalusValidationError(f"Duplicate switching time '{stamp}'")
+        seen_times.add(stamp)
+
+        raw_temperature = entry.get("temperature")
+        try:
+            temperature = float(raw_temperature)
+        except (TypeError, ValueError) as err:
+            raise SalusValidationError(
+                f"'{raw_temperature}' is not a valid temperature"
+            ) from err
+
+        if not MIN_SCHEDULE_TEMP <= temperature <= MAX_SCHEDULE_TEMP:
+            raise SalusValidationError(
+                f"Temperature {temperature} is outside the supported "
+                f"{MIN_SCHEDULE_TEMP:g}-{MAX_SCHEDULE_TEMP:g}\u00b0C range"
+            )
+
+        steps = round(temperature / TEMPERATURE_INCREMENT)
+        if abs(temperature - steps * TEMPERATURE_INCREMENT) > 1e-6:
+            raise SalusValidationError(
+                f"Temperature {temperature} is not a multiple of "
+                f"{TEMPERATURE_INCREMENT}\u00b0C"
+            )
+
+
 def encode_heating(slots: list[dict[str, Any]]) -> str:
     """Encode time/temperature slots into a heating program string."""
+    validate_heating_entries(slots)
     parts: list[str] = []
     for slot in slots:
         hour, minute = _hhmm(str(slot.get("time", "00:00")))
@@ -103,6 +175,31 @@ def encode_heating(slots: list[dict[str, Any]]) -> str:
             _encode(hour) + _encode(minute) + _encode(whole) + _encode(tenths)
         )
     return "".join(parts)
+
+
+def validate_hot_water_entries(entries: list[dict[str, Any]]) -> None:
+    """Validate hot water schedule entries before they are encoded and sent."""
+    if len(entries) > MAX_ENTRIES_PER_DAY:
+        raise SalusValidationError(
+            f"A day can have at most {MAX_ENTRIES_PER_DAY} switching points, "
+            f"got {len(entries)}"
+        )
+
+    seen: set[tuple[str, str]] = set()
+    for entry in entries:
+        raw_on, raw_off = str(entry.get("on_time", "")), str(entry.get("off_time", ""))
+        try:
+            on_h, on_m = _hhmm(raw_on)
+            off_h, off_m = _hhmm(raw_off)
+        except ValueError as err:
+            raise SalusValidationError(
+                f"'{raw_on}'/'{raw_off}' is not a valid on/off time pair"
+            ) from err
+
+        pair = (f"{on_h:02d}:{on_m:02d}", f"{off_h:02d}:{off_m:02d}")
+        if pair in seen:
+            raise SalusValidationError(f"Duplicate switching times {pair}")
+        seen.add(pair)
 
 
 def decode_hot_water(raw: Any) -> list[HotWaterSlot]:
@@ -128,6 +225,7 @@ def decode_hot_water(raw: Any) -> list[HotWaterSlot]:
 
 def encode_hot_water(slots: list[dict[str, Any]]) -> str:
     """Encode on/off slots into a hot water program string."""
+    validate_hot_water_entries(slots)
     parts: list[str] = []
     for slot in slots:
         on_h, on_m = _hhmm(str(slot.get("on_time", "00:00")))

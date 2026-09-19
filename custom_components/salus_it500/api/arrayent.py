@@ -30,15 +30,17 @@ import xml.etree.ElementTree as ET
 from hashlib import md5
 from typing import Any
 
-from aiohttp import ClientError, ClientResponse, ClientSession, ClientTimeout
+from aiohttp import ClientResponse, ClientSession, ClientTimeout
 
 from .client import SalusClient
 from .exceptions import (
     SalusAuthError,
-    SalusCommandError,
     SalusConnectionError,
+    SalusDeviceError,
     SalusDeviceNotFound,
+    SalusProtocolError,
     SalusRateLimitError,
+    SalusValidationError,
 )
 from .model import (
     DAY_ATTR,
@@ -51,6 +53,7 @@ from .model import (
     ZoneAttr,
     parse_attributes,
 )
+from .util import async_request_with_retry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -81,7 +84,7 @@ def _attributes_from_xml(text: str) -> dict[str, str]:
     try:
         root = ET.fromstring(text)
     except ET.ParseError as err:
-        raise SalusCommandError(f"Malformed XML from Salus: {err}") from err
+        raise SalusProtocolError(f"Malformed XML from Salus: {err}") from err
 
     attrs: dict[str, str] = {}
     for element in root.iter():
@@ -107,6 +110,7 @@ class ArrayentClient(SalusClient):
     supports_second_zone = True
     supports_boost = True
     supports_calibration = True
+    supports_differential = True
     supports_holiday = True
 
     def __init__(
@@ -125,6 +129,8 @@ class ArrayentClient(SalusClient):
         self._user_id: int | None = None
         self._token_at: float = 0.0
         self._lock = asyncio.Lock()
+        #: Updated from S07 on every read; writes convert Celsius into this.
+        self._fahrenheit: bool = False
 
     # --- Session handling --------------------------------------------------
 
@@ -138,13 +144,13 @@ class ArrayentClient(SalusClient):
             "Content-Type": "application/json",
         }
 
-        try:
-            response = await self._session.post(
+        response = await async_request_with_retry(
+            lambda: self._session.post(
                 url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT
-            )
-            body = await response.text()
-        except (ClientError, asyncio.TimeoutError) as err:
-            raise SalusConnectionError(f"Could not reach the Salus cloud: {err}") from err
+            ),
+            what="the Salus cloud",
+        )
+        body = await response.text()
 
         if response.status in (401, 403):
             raise SalusAuthError("Salus rejected the email address or password")
@@ -181,45 +187,52 @@ class ArrayentClient(SalusClient):
         params: dict[str, Any] | None = None,
         *,
         tolerate_500: bool = False,
-        _retry: bool = True,
     ) -> ClientResponse:
-        """Issue an authenticated call against the zamapi surface."""
-        token = await self._async_token()
+        """Issue an authenticated call against the zamapi surface.
+
+        A bounded, iterative loop: one attempt, and - only if the token was
+        rejected - exactly one more after forcing a fresh login. This never
+        recurses and never retries an outright rejection twice.
+        """
         url = f"{HOST}/{API_PATH}/{endpoint}"
 
-        body: dict[str, Any] = dict(params or {})
-        body["secToken"] = token
-        if self._user_id is not None:
-            body.setdefault("userId", self._user_id)
+        for attempt in range(2):
+            token = await self._async_token()
+            body: dict[str, Any] = dict(params or {})
+            body["secToken"] = token
+            if self._user_id is not None:
+                body.setdefault("userId", self._user_id)
 
-        kwargs: dict[str, Any] = {"timeout": REQUEST_TIMEOUT}
-        if method.lower() == "get":
-            kwargs["params"] = {k: str(v) for k, v in body.items()}
-        else:
-            kwargs["data"] = {k: str(v) for k, v in body.items()}
+            kwargs: dict[str, Any] = {"timeout": REQUEST_TIMEOUT}
+            if method.lower() == "get":
+                kwargs["params"] = {k: str(v) for k, v in body.items()}
+            else:
+                kwargs["data"] = {k: str(v) for k, v in body.items()}
 
-        try:
-            response = await self._session.request(method, url, **kwargs)
-        except (ClientError, asyncio.TimeoutError) as err:
-            raise SalusConnectionError(f"Salus request failed: {err}") from err
-
-        if response.status in (401, 403) and _retry:
-            _LOGGER.debug("Token rejected on %s, re-authenticating", endpoint)
-            self._token = None
-            return await self._async_request(
-                method, endpoint, params, tolerate_500=tolerate_500, _retry=False
+            response = await async_request_with_retry(
+                lambda: self._session.request(method, url, **kwargs),
+                what=f"Salus ({endpoint})",
             )
-        if response.status in (401, 403):
-            raise SalusAuthError("Salus rejected the session token twice")
-        if response.status == 429:
-            raise SalusRateLimitError("Salus is rate limiting this address")
-        if response.status == 500 and tolerate_500:
-            _LOGGER.debug("%s returned 500; Salus often does this on success", endpoint)
-            return response
-        if response.status >= 400:
-            raise SalusConnectionError(f"{endpoint} returned {response.status}")
 
-        return response
+            if response.status in (401, 403):
+                if attempt == 0:
+                    _LOGGER.debug("Token rejected on %s, re-authenticating", endpoint)
+                    self._token = None
+                    continue
+                raise SalusAuthError("Salus rejected the session token twice")
+            if response.status == 429:
+                raise SalusRateLimitError("Salus is rate limiting this address")
+            if response.status == 500 and tolerate_500:
+                _LOGGER.debug(
+                    "%s returned 500; Salus often does this on success", endpoint
+                )
+                return response
+            if response.status >= 400:
+                raise SalusConnectionError(f"{endpoint} returned {response.status}")
+
+            return response
+
+        raise SalusAuthError("Salus rejected the session token twice")
 
     async def async_close(self) -> None:
         """Nothing to release; the aiohttp session is owned by Home Assistant."""
@@ -235,7 +248,7 @@ class ArrayentClient(SalusClient):
         try:
             root = ET.fromstring(text)
         except ET.ParseError as err:
-            raise SalusConnectionError(f"Malformed device list: {err}") from err
+            raise SalusProtocolError(f"Malformed device list: {err}") from err
 
         devices: list[dict[str, Any]] = []
         for element in root.iter():
@@ -270,10 +283,23 @@ class ArrayentClient(SalusClient):
             )
 
         state = parse_attributes(self._device_id, attrs)
+        self._fahrenheit = state.source_unit_fahrenheit
         # A thermostat that has lost its RF link reports a room temperature of
         # zero across the board rather than an explicit offline flag.
         state.online = state.ch1.current_temperature not in (None, 0.0)
         return state
+
+    # --- Unit conversion -----------------------------------------------------
+
+    def _device_temp(self, celsius: float) -> int:
+        """Scale a Celsius reading into the device's native x100 units."""
+        degrees = celsius * 1.8 + 32 if self._fahrenheit else celsius
+        return int(round(degrees * 100))
+
+    def _device_delta(self, celsius_delta: float) -> int:
+        """Scale a Celsius *difference* (offset/span) the same way."""
+        degrees = celsius_delta * 1.8 if self._fahrenheit else celsius_delta
+        return int(round(degrees * 100))
 
     # --- Writes ------------------------------------------------------------
 
@@ -308,26 +334,26 @@ class ArrayentClient(SalusClient):
 
             error = root.findtext("errorMsg")
             if error:
-                raise SalusCommandError(f"Salus refused the command: {error}")
+                raise SalusDeviceError(f"Salus refused the command: {error}")
 
             ret_code = root.findtext("retCode")
             if ret_code not in (None, "", "0"):
-                raise SalusCommandError(f"Salus returned code {ret_code}")
+                raise SalusDeviceError(f"Salus returned code {ret_code}")
 
     @staticmethod
     def _zone_attr(zone: str, attr: ZoneAttr) -> str:
         try:
             return ZONE_PREFIX[zone].value + attr.value
         except KeyError as err:
-            raise SalusCommandError(f"Unknown zone '{zone}'") from err
+            raise SalusValidationError(f"Unknown zone '{zone}'") from err
 
     async def async_set_target_temperature(self, zone: str, temperature: float) -> None:
         """Hold ``temperature`` until the next scheduled change."""
         await self._async_set(
             {
                 self._zone_attr(zone, ZoneAttr.CH_TEMP_HOLD_MODE): 1,
-                self._zone_attr(zone, ZoneAttr.CH_SETPOINT): int(
-                    round(temperature * 100)
+                self._zone_attr(zone, ZoneAttr.CH_SETPOINT): self._device_temp(
+                    temperature
                 ),
             }
         )
@@ -335,7 +361,7 @@ class ArrayentClient(SalusClient):
     async def async_set_heating_mode(self, zone: str, mode: HeatingMode) -> None:
         """Apply the three-flag combination that represents ``mode``."""
         if mode is HeatingMode.UNKNOWN:
-            raise SalusCommandError("Cannot set an unknown heating mode")
+            raise SalusValidationError("Cannot set an unknown heating mode")
 
         off_flag, manual_flag, hold_flag = HEATING_MODE_FLAGS[mode]
         await self._async_set(
@@ -363,24 +389,24 @@ class ArrayentClient(SalusClient):
     async def async_set_frost_temperature(self, temperature: float) -> None:
         """Set the frost-protection setpoint."""
         await self._async_set(
-            {SystemAttr.FROST_TEMPERATURE.value: int(round(temperature * 100))}
+            {SystemAttr.FROST_TEMPERATURE.value: self._device_temp(temperature)}
         )
 
     async def async_set_temperature_offset(self, offset: float) -> None:
         """Calibrate the room temperature reading."""
         await self._async_set(
-            {SystemAttr.DISPLAY_OFFSET.value: int(round(offset * 100))}
+            {SystemAttr.DISPLAY_OFFSET.value: self._device_delta(offset)}
         )
 
     async def async_set_span(self, span: float) -> None:
         """Set the switching differential."""
-        await self._async_set({SystemAttr.SPAN.value: int(round(span * 100))})
+        await self._async_set({SystemAttr.SPAN.value: self._device_delta(span)})
 
     async def async_set_program(self, zone: str, day: str, program: str) -> None:
         """Write one day of the weekly program."""
         key = day.strip().lower()
         if key not in DAY_ATTR:
-            raise SalusCommandError(f"'{day}' is not a day of the week")
+            raise SalusValidationError(f"'{day}' is not a day of the week")
         await self._async_set({self._zone_attr(zone, DAY_ATTR[key]): program})
 
     async def async_set_holiday(

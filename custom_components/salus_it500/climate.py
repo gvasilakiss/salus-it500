@@ -162,6 +162,10 @@ class SalusClimate(SalusZoneEntity, ClimateEntity):
         if zone.schedule_type is not None:
             attributes["schedule_type"] = zone.schedule_type.name.lower()
 
+        override_until = self.coordinator.pending_override_until(self._zone)
+        if override_until is not None:
+            attributes["temporary_override_until"] = override_until.isoformat()
+
         today = self._today_slots()
         if today:
             stamp = self._now_hhmm()
@@ -211,6 +215,7 @@ class SalusClimate(SalusZoneEntity, ClimateEntity):
             if zone.mode is HeatingMode.AUTO:
                 zone.mode = HeatingMode.TEMP_HOLD
 
+        self.coordinator.clear_pending_override(self._zone)
         await self.coordinator.async_command(
             lambda: self.coordinator.client.async_set_target_temperature(
                 self._zone, float(temperature)
@@ -227,6 +232,7 @@ class SalusClimate(SalusZoneEntity, ClimateEntity):
         def optimistic(state) -> None:
             state.zone(self._zone).mode = mode
 
+        self.coordinator.clear_pending_override(self._zone)
         await self.coordinator.async_command(
             lambda: self.coordinator.client.async_set_heating_mode(self._zone, mode),
             optimistic=optimistic,
@@ -252,6 +258,7 @@ class SalusClimate(SalusZoneEntity, ClimateEntity):
                 lambda: self.coordinator.client.async_set_boost(self._zone, 0)
             )
 
+        self.coordinator.clear_pending_override(self._zone)
         await self.coordinator.async_command(
             lambda: self.coordinator.client.async_set_heating_mode(self._zone, mode),
             optimistic=lambda state: setattr(state.zone(self._zone), "mode", mode),
